@@ -9,5 +9,6 @@ export default function RequireAuth({ children }: { children: React.ReactNode })
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
+  
   return <>{children}</>;
 }
