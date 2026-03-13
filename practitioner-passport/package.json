@@ -1,0 +1,7 @@
+{
+  "name": "practitioner-passport",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ]
+}
