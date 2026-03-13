@@ -27,6 +27,7 @@ import PlacementRequestsPage from "../features/teacher/pages/PlacementRequestsPa
 import TeacherChatPage from "../features/teacher/pages/TeacherChatPage";
 import ReportsPage from "../features/teacher/pages/ReportsPage";
 
+
 export default function AppRoutes() {
   return (
     <Routes>
