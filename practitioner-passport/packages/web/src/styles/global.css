@@ -187,3 +187,11 @@ body {
 .muted {
   color: var(--text-muted);
 }
+
+/* ---------- Slider Styling ---------- */
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
