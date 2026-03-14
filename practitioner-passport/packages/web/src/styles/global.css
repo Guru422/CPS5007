@@ -195,3 +195,8 @@ input[type="range"] {
   accent-color: var(--primary);
   cursor: pointer;
 }
+
+textarea.input {
+  resize: vertical;
+  min-height: 100px;
+}
