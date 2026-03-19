@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { createAiCvGeneration, listAiCvGenerations } from "../studentApi";
 
@@ -19,39 +19,19 @@ export default function AiCvGeneratorPage() {
   const [includePlacements, setIncludePlacements] = useState(true);
   const [generated, setGenerated] = useState(false);
   const [error, setError] = useState("");
-
-  const cvPreview = useMemo(() => {
-    return {
-      summary: `Motivated ${jobRole} candidate that demonstrates growing technical ability, reflective development, and readiness for placement and industry experience.`,
-      skills: [
-        "Communication",
-        "Python",
-        "SQL",
-        "Problem Solving",
-        "Teamwork",
-        "Data Analysis"
-      ],
-      qualifications: includeQualifications
-        ? [
-            "Google Data Analytics Certificate",
-            "AWS Cloud Practitioner",
-            "Python for Data Science"
-          ]
-        : [],
-      development: includeDevelopment
-        ? [
-            "Improved SQL query writing through project work",
-            "Developed stronger data visualisation skills",
-            "Enhanced communication through collaborative presentations"
-          ]
-        : [],
-      placements: includePlacements
-        ? [
-            `${jobRole} placement experience with responsibilities aligned to industry practice`
-          ]
-        : []
-    };
-  }, [jobRole, includeQualifications, includeDevelopment, includePlacements]);
+  const [cvPreview, setCvPreview] = useState<{
+    summary: string;
+    skills: string[];
+    qualifications: string[];
+    development: string[];
+    placements: string[];
+  }>({
+    summary: "",
+    skills: [],
+    qualifications: [],
+    development: [],
+    placements: [],
+  });
 
   useEffect(() => {
     async function load() {
@@ -59,6 +39,16 @@ export default function AiCvGeneratorPage() {
       try {
         const data = await listAiCvGenerations(user.id);
         if (data.length > 0) {
+          const latest = data[0].cvPreview;
+          setCvPreview({
+            summary: String(latest.summary || ""),
+            skills: Array.isArray(latest.skills) ? latest.skills.map((v) => String(v)) : [],
+            qualifications: Array.isArray(latest.qualifications)
+              ? latest.qualifications.map((v) => String(v))
+              : [],
+            development: Array.isArray(latest.development) ? latest.development.map((v) => String(v)) : [],
+            placements: Array.isArray(latest.placements) ? latest.placements.map((v) => String(v)) : [],
+          });
           setGenerated(true);
         }
       } catch (err) {
@@ -76,14 +66,22 @@ export default function AiCvGeneratorPage() {
     }
     setError("");
     try {
-      await createAiCvGeneration({
+      const created = await createAiCvGeneration({
         userId: user.id,
         jobRole,
         tone,
         includeQualifications,
         includeDevelopment,
         includePlacements,
-        cvPreview,
+        cvPreview: {},
+      });
+      const result = created.cvPreview;
+      setCvPreview({
+        summary: String(result.summary || ""),
+        skills: Array.isArray(result.skills) ? result.skills.map((v) => String(v)) : [],
+        qualifications: Array.isArray(result.qualifications) ? result.qualifications.map((v) => String(v)) : [],
+        development: Array.isArray(result.development) ? result.development.map((v) => String(v)) : [],
+        placements: Array.isArray(result.placements) ? result.placements.map((v) => String(v)) : [],
       });
       setGenerated(true);
     } catch (err) {

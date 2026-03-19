@@ -89,6 +89,23 @@ export type AiCvRecord = {
   createdAt: string;
 };
 
+export type StudentChatConversation = {
+  id: number;
+  userId: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type StudentChatMessage = {
+  id: number;
+  conversationId: number;
+  userId: string;
+  role: "user" | "assistant";
+  message: string;
+  createdAt: string;
+};
+
 function withUser(path: string, userId: string): string {
   const encoded = encodeURIComponent(userId);
   return `${path}?userId=${encoded}`;
@@ -181,5 +198,56 @@ export async function createAiCvGeneration(payload: Omit<AiCvRecord, "id" | "cre
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+  return res.data;
+}
+
+export async function listConversations(userId: string): Promise<StudentChatConversation[]> {
+  const res = await request<ApiResponse<StudentChatConversation[]>>(
+    withUser("/bff/student/chat/conversations", userId),
+  );
+  return res.data;
+}
+
+export async function createConversation(payload: {
+  userId: string;
+  title?: string;
+}): Promise<StudentChatConversation> {
+  const res = await request<ApiResponse<StudentChatConversation>>("/bff/student/chat/conversations", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return res.data;
+}
+
+export async function deleteConversation(userId: string, conversationId: number): Promise<void> {
+  await request(withUser(`/bff/student/chat/conversations/${conversationId}`, userId), {
+    method: "DELETE",
+  });
+}
+
+export async function listConversationMessages(
+  userId: string,
+  conversationId: number,
+): Promise<StudentChatMessage[]> {
+  const res = await request<ApiResponse<StudentChatMessage[]>>(
+    withUser(`/bff/student/chat/conversations/${conversationId}/messages`, userId),
+  );
+  return res.data;
+}
+
+export async function sendStudentChatMessage(payload: {
+  userId: string;
+  conversationId: number;
+  message: string;
+}): Promise<{ userMessage: StudentChatMessage; assistantMessage: StudentChatMessage }> {
+  const res = await request<ApiResponse<{ userMessage: StudentChatMessage; assistantMessage: StudentChatMessage }>>(
+    "/bff/student/chat/messages",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
   return res.data;
 }
