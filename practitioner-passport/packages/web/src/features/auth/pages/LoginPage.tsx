@@ -1,38 +1,57 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Role, useAuth } from "../../../app/providers/AuthProvider";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../../app/providers/AuthProvider";
+
+interface LoginLocationState {
+  signupSuccess?: boolean;
+  email?: string;
+  fullName?: string;
+}
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = (location.state as LoginLocationState | null) ?? null;
+  const query = new URLSearchParams(location.search);
+  const verifiedFromLink = query.get("verified") === "1";
+  const verifiedEmail = query.get("email") ?? "";
 
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [studentId, setStudentId] = useState("");
-  const [role, setRole] = useState<Role>("student");
+  const [email, setEmail] = useState(state?.email ?? verifiedEmail);
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login({ role, fullName, email, studentId });
-    navigate("/redirect", { replace: true });
+    setError("");
+    setLoading(true);
+    try {
+      await login({ email, password });
+      navigate("/redirect", { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="page">
       <h1>Login</h1>
       <p className="muted">Mock login for Practitioner Passport development.</p>
+      {(state?.signupSuccess || verifiedFromLink) && (
+        <p className="muted" style={{ marginTop: 8 }}>
+          Account verified successfully. Please log in to continue.
+        </p>
+      )}
+      {error && (
+        <p className="muted" style={{ marginTop: 8, color: "#b42318" }}>
+          {error}
+        </p>
+      )}
 
       <form onSubmit={onSubmit} className="card">
-        <label className="label">
-          Full name
-          <input
-            className="input"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="Enter your full name"
-          />
-        </label>
-
         <label className="label">
           Email
           <input
@@ -44,29 +63,19 @@ export default function LoginPage() {
           />
         </label>
 
-        {role === "student" && (
-          <label className="label">
-            Student ID
-            <input
-              className="input"
-              value={studentId}
-              onChange={(e) => setStudentId(e.target.value)}
-              placeholder="Enter your student ID"
-            />
-          </label>
-        )}
-
         <label className="label">
-          Role
-          <select className="input" value={role} onChange={(e) => setRole(e.target.value as Role)}>
-            <option value="student">Student</option>
-            <option value="mentor">Mentor</option>
-            <option value="teacher">Teacher</option>
-          </select>
+          Password
+          <input
+            className="input"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter your password"
+          />
         </label>
 
-        <button className="btn primary" type="submit">
-          Login
+        <button className="btn primary" type="submit" disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
         </button>
 
         <p className="muted" style={{ marginTop: 12 }}>
