@@ -7,7 +7,7 @@ export default function SignupPage() {
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [studentId, setStudentId] = useState("");
+  const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("student");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -62,9 +62,9 @@ export default function SignupPage() {
         </p>
       )}
 
-      <form onSubmit={onSubmit} className="card">
+      <form onSubmit={handleSubmit} className="card">
         <label className="label">
-          Full name
+          Full Name
           <input
             className="input"
             value={fullName}
@@ -118,14 +118,9 @@ export default function SignupPage() {
           </label>
         )}
 
-        <label className="label">
-          Role
-          <select className="input" value={role} onChange={(e) => setRole(e.target.value as Role)}>
-            <option value="student">Student</option>
-            <option value="mentor">Mentor</option>
-            <option value="teacher">Teacher</option>
-          </select>
-        </label>
+        {errorMessage && (
+          <p style={{ color: "#b42318", marginTop: 0 }}>{errorMessage}</p>
+        )}
 
         <button className="btn primary" type="submit" disabled={sending}>
           {sending ? "Sending link..." : "Create account"}
