@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../../../app/providers/AuthProvider";
+import { createAiCvGeneration, listAiCvGenerations } from "../studentApi";
 
 type CvTone = "Professional" | "Academic" | "Creative";
 type JobRole =
@@ -9,12 +11,14 @@ type JobRole =
   | "Business Analyst";
 
 export default function AiCvGeneratorPage() {
+  const { user } = useAuth();
   const [jobRole, setJobRole] = useState<JobRole>("Data Analyst");
   const [tone, setTone] = useState<CvTone>("Professional");
   const [includeQualifications, setIncludeQualifications] = useState(true);
   const [includeDevelopment, setIncludeDevelopment] = useState(true);
   const [includePlacements, setIncludePlacements] = useState(true);
   const [generated, setGenerated] = useState(false);
+  const [error, setError] = useState("");
 
   const cvPreview = useMemo(() => {
     return {
@@ -49,9 +53,42 @@ export default function AiCvGeneratorPage() {
     };
   }, [jobRole, includeQualifications, includeDevelopment, includePlacements]);
 
-  function handleGenerate(e: React.FormEvent) {
+  useEffect(() => {
+    async function load() {
+      if (!user.id) return;
+      try {
+        const data = await listAiCvGenerations(user.id);
+        if (data.length > 0) {
+          setGenerated(true);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load previous CV generations.");
+      }
+    }
+    void load();
+  }, [user.id]);
+
+  async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
-    setGenerated(true);
+    if (!user.id) {
+      setError("Please log in again.");
+      return;
+    }
+    setError("");
+    try {
+      await createAiCvGeneration({
+        userId: user.id,
+        jobRole,
+        tone,
+        includeQualifications,
+        includeDevelopment,
+        includePlacements,
+        cvPreview,
+      });
+      setGenerated(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save generated CV.");
+    }
   }
 
   return (
@@ -61,6 +98,11 @@ export default function AiCvGeneratorPage() {
         Generate a tailored CV preview using your qualifications, development history,
         competencies, and placement experience.
       </p>
+      {error && (
+        <p className="muted" style={{ color: "#b42318" }}>
+          {error}
+        </p>
+      )}
 
       <div
         style={{

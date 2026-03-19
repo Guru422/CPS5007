@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "../../../app/providers/AuthProvider";
+import { createQualification, deleteQualification, listQualifications } from "../studentApi";
 
 type Qualification = {
   id: number;
@@ -8,13 +10,28 @@ type Qualification = {
 };
 
 export default function QualificationsPage() {
+  const { user } = useAuth();
   const [qualifications, setQualifications] = useState<Qualification[]>([]);
+  const [error, setError] = useState("");
 
   const [title, setTitle] = useState("");
   const [organisation, setOrganisation] = useState("");
   const [year, setYear] = useState("");
 
-  function addQualification(e: React.FormEvent) {
+  useEffect(() => {
+    async function load() {
+      if (!user.id) return;
+      try {
+        const data = await listQualifications(user.id);
+        setQualifications(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load qualifications.");
+      }
+    }
+    void load();
+  }, [user.id]);
+
+  async function addQualification(e: React.FormEvent) {
     e.preventDefault();
 
     if (!title || !organisation || !year) {
@@ -22,22 +39,35 @@ export default function QualificationsPage() {
       return;
     }
 
-    const newQualification: Qualification = {
-      id: Date.now(),
-      title,
-      organisation,
-      year,
-    };
-
-    setQualifications([...qualifications, newQualification]);
-
-    setTitle("");
-    setOrganisation("");
-    setYear("");
+    if (!user.id) {
+      setError("Please log in again.");
+      return;
+    }
+    setError("");
+    try {
+      const newQualification = await createQualification({
+        userId: user.id,
+        title,
+        organisation,
+        year,
+      });
+      setQualifications((prev) => [newQualification, ...prev]);
+      setTitle("");
+      setOrganisation("");
+      setYear("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save qualification.");
+    }
   }
 
-  function removeQualification(id: number) {
-    setQualifications(qualifications.filter((q) => q.id !== id));
+  async function removeQualification(id: number) {
+    if (!user.id) return;
+    try {
+      await deleteQualification(user.id, id);
+      setQualifications((prev) => prev.filter((q) => q.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete qualification.");
+    }
   }
 
   return (
@@ -47,6 +77,11 @@ export default function QualificationsPage() {
         Add certificates and qualifications that support your professional
         development.
       </p>
+      {error && (
+        <p className="muted" style={{ color: "#b42318" }}>
+          {error}
+        </p>
+      )}
 
       <form className="card" onSubmit={addQualification}>
         <label className="label">

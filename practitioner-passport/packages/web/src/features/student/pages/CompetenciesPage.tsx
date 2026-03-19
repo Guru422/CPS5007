@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "../../../app/providers/AuthProvider";
+import { createCompetency, listCompetencies } from "../studentApi";
 
 const attributes = [
   "Communication",
@@ -12,7 +14,12 @@ const attributes = [
 ];
 
 export default function CompetenciesPage() {
+  const { user } = useAuth();
   const [role, setRole] = useState("Data Analyst");
+  const [history, setHistory] = useState<
+    { id: number; role: string; submittedAt: string; attributes: Record<string, number> }[]
+  >([]);
+  const [error, setError] = useState("");
 
   const [values, setValues] = useState<Record<string, number>>(
     attributes.reduce((acc, attr) => {
@@ -28,18 +35,37 @@ export default function CompetenciesPage() {
     }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    async function load() {
+      if (!user.id) return;
+      try {
+        const data = await listCompetencies(user.id);
+        setHistory(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load competencies.");
+      }
+    }
+    void load();
+  }, [user.id]);
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
-    const submission = {
-      role,
-      attributes: values,
-      date: new Date().toISOString(),
-    };
-
-    console.log("Competency submission:", submission);
-
-    alert("Competency record submitted (console log for now)");
+    if (!user.id) {
+      setError("Please log in again.");
+      return;
+    }
+    setError("");
+    try {
+      const saved = await createCompetency({
+        userId: user.id,
+        role,
+        attributes: values,
+      });
+      setHistory((prev) => [saved, ...prev]);
+      alert("Competency record submitted.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save competency.");
+    }
   }
 
   return (
@@ -48,6 +74,11 @@ export default function CompetenciesPage() {
       <p className="muted">
         Rate your skills and attributes for your selected role.
       </p>
+      {error && (
+        <p className="muted" style={{ color: "#b42318" }}>
+          {error}
+        </p>
+      )}
 
       <form className="card" onSubmit={handleSubmit}>
         <label className="label">
@@ -87,6 +118,18 @@ export default function CompetenciesPage() {
           Submit Competency
         </button>
       </form>
+
+      {history.length > 0 && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h3>Submitted Competency Records</h3>
+          {history.map((item) => (
+            <div key={item.id} style={{ padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
+              <strong>{item.role}</strong>
+              <div className="muted">{new Date(item.submittedAt).toLocaleString()}</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../../../app/providers/AuthProvider";
+import { createPlacement, deletePlacement, listPlacements } from "../studentApi";
 
 type PlacementStatus = "Pending" | "Approved" | "Rejected";
 type PlacementType = "Internship" | "Part Time" | "Full Time" | "Work Experience";
@@ -16,7 +18,9 @@ type Placement = {
 };
 
 export default function PlacementsPage() {
+  const { user } = useAuth();
   const [placements, setPlacements] = useState<Placement[]>([]);
+  const [error, setError] = useState("");
 
   const [title, setTitle] = useState("");
   const [organisation, setOrganisation] = useState("");
@@ -37,7 +41,20 @@ export default function PlacementsPage() {
     [placements]
   );
 
-  function addPlacement(e: React.FormEvent) {
+  useEffect(() => {
+    async function load() {
+      if (!user.id) return;
+      try {
+        const data = await listPlacements(user.id);
+        setPlacements(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load placements.");
+      }
+    }
+    void load();
+  }, [user.id]);
+
+  async function addPlacement(e: React.FormEvent) {
     e.preventDefault();
 
     if (
@@ -52,32 +69,47 @@ export default function PlacementsPage() {
       return;
     }
 
-    const newPlacement: Placement = {
-      id: Date.now(),
-      title: title.trim(),
-      organisation: organisation.trim(),
-      location: location.trim(),
-      type,
-      startDate,
-      endDate,
-      status,
-      description: description.trim()
-    };
+    if (!user.id) {
+      setError("Please log in again.");
+      return;
+    }
+    setError("");
+    try {
+      const newPlacement = await createPlacement({
+        userId: user.id,
+        title: title.trim(),
+        organisation: organisation.trim(),
+        location: location.trim(),
+        type,
+        startDate,
+        endDate,
+        status,
+        description: description.trim(),
+      });
 
-    setPlacements([newPlacement, ...placements]);
+      setPlacements((prev) => [newPlacement, ...prev]);
 
-    setTitle("");
-    setOrganisation("");
-    setLocation("");
-    setType("Internship");
-    setStartDate("");
-    setEndDate("");
-    setStatus("Pending");
-    setDescription("");
+      setTitle("");
+      setOrganisation("");
+      setLocation("");
+      setType("Internship");
+      setStartDate("");
+      setEndDate("");
+      setStatus("Pending");
+      setDescription("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save placement.");
+    }
   }
 
-  function removePlacement(id: number) {
-    setPlacements(placements.filter((placement) => placement.id !== id));
+  async function removePlacement(id: number) {
+    if (!user.id) return;
+    try {
+      await deletePlacement(user.id, id);
+      setPlacements((prev) => prev.filter((placement) => placement.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete placement.");
+    }
   }
 
   return (
@@ -86,6 +118,11 @@ export default function PlacementsPage() {
       <p className="muted">
         Add and track your placement applications, internship roles, and work-based opportunities.
       </p>
+      {error && (
+        <p className="muted" style={{ color: "#b42318" }}>
+          {error}
+        </p>
+      )}
 
       <div
         style={{

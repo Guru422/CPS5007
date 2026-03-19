@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "../../../app/providers/AuthProvider";
+import { createDevelopmentLog, deleteDevelopmentLog, listDevelopmentLogs } from "../studentApi";
 
 type DevelopmentEntry = {
   id: number;
@@ -8,13 +10,28 @@ type DevelopmentEntry = {
 };
 
 export default function DevelopmentLogPage() {
+  const { user } = useAuth();
   const [entries, setEntries] = useState<DevelopmentEntry[]>([]);
+  const [error, setError] = useState("");
 
   const [skill, setSkill] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
 
-  function addEntry(e: React.FormEvent) {
+  useEffect(() => {
+    async function load() {
+      if (!user.id) return;
+      try {
+        const data = await listDevelopmentLogs(user.id);
+        setEntries(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load development logs.");
+      }
+    }
+    void load();
+  }, [user.id]);
+
+  async function addEntry(e: React.FormEvent) {
     e.preventDefault();
 
     if (!skill || !description || !date) {
@@ -22,22 +39,35 @@ export default function DevelopmentLogPage() {
       return;
     }
 
-    const newEntry: DevelopmentEntry = {
-      id: Date.now(),
-      skill,
-      description,
-      date,
-    };
-
-    setEntries([newEntry, ...entries]);
-
-    setSkill("");
-    setDescription("");
-    setDate("");
+    if (!user.id) {
+      setError("Please log in again.");
+      return;
+    }
+    setError("");
+    try {
+      const newEntry = await createDevelopmentLog({
+        userId: user.id,
+        skill,
+        description,
+        date,
+      });
+      setEntries((prev) => [newEntry, ...prev]);
+      setSkill("");
+      setDescription("");
+      setDate("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save development entry.");
+    }
   }
 
-  function removeEntry(id: number) {
-    setEntries(entries.filter((entry) => entry.id !== id));
+  async function removeEntry(id: number) {
+    if (!user.id) return;
+    try {
+      await deleteDevelopmentLog(user.id, id);
+      setEntries((prev) => prev.filter((entry) => entry.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete development entry.");
+    }
   }
 
   return (
@@ -46,6 +76,11 @@ export default function DevelopmentLogPage() {
       <p className="muted">
         Record what you have improved, developed, or learned over time.
       </p>
+      {error && (
+        <p className="muted" style={{ color: "#b42318" }}>
+          {error}
+        </p>
+      )}
 
       <form className="card" onSubmit={addEntry}>
         <label className="label">

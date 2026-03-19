@@ -3,6 +3,7 @@ import React, { createContext, useContext, useMemo, useState } from "react";
 export type Role = "student" | "mentor" | "teacher";
 
 export interface User {
+  id?: string;
   isAuthenticated: boolean;
   role: Role;
   fullName?: string;
@@ -39,6 +40,7 @@ type ApiUser = {
 
 type ApiError = {
   message?: string;
+  error?: string;
 };
 
 async function requestJson<T>(path: string, body: Record<string, unknown>): Promise<T> {
@@ -56,6 +58,8 @@ async function requestJson<T>(path: string, body: Record<string, unknown>): Prom
       const data = (await response.json()) as ApiError;
       if (typeof data?.message === "string" && data.message.trim()) {
         errorMessage = data.message;
+      } else if (typeof data?.error === "string" && data.error.trim()) {
+        errorMessage = data.error;
       }
     } catch {
       // Ignore invalid error body and keep generic message.
@@ -79,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await requestJson<{ user: ApiUser }>("/bff/auth/login", { email, password });
 
     setUser({
+      id: data.user.id,
       isAuthenticated: data.user.isAuthenticated,
       role: data.user.role,
       fullName: data.user.fullName,
@@ -109,6 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     setUser({
+      id: undefined,
       isAuthenticated: false,
       role: "student",
       fullName: "",
@@ -121,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     setUser({
+      id: undefined,
       isAuthenticated: false,
       role: "student",
       fullName: "",
