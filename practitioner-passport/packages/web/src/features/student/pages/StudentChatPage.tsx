@@ -1,151 +1,137 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../../../app/providers/AuthProvider";
+import { useChatSocket } from "../../../hooks/useSocket";
 import {
+  ChatConversation,
+  ChatMessage,
+  TeacherInfo,
   createConversation,
   deleteConversation,
   listConversationMessages,
   listConversations,
-  sendStudentChatMessage,
-  StudentChatConversation,
-  StudentChatMessage,
+  listTeachers,
+  sendChatMessage,
 } from "../studentApi";
 
 export default function StudentChatPage() {
   const { user } = useAuth();
-  const [conversations, setConversations] = useState<StudentChatConversation[]>([]);
-  const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
-  const [messages, setMessages] = useState<StudentChatMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const userId = user.id ?? "";
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const [teachers, setTeachers] = useState<TeacherInfo[]>([]);
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const [showNewChat, setShowNewChat] = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useChatSocket(activeId, (raw) => {
+    const msg = raw as ChatMessage;
+    if (msg.senderId !== userId) {
+      setMessages((prev) => [...prev, msg]);
+    }
+  });
 
   useEffect(() => {
-    scrollToBottom();
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const loadConversations = useCallback(async () => {
-    if (!user.id) return;
+  const refresh = useCallback(async () => {
+    if (!userId) return;
     try {
-      const data = await listConversations(user.id);
-      setConversations(data);
+      const [t, c] = await Promise.all([listTeachers(), listConversations(userId, "student")]);
+      setTeachers(t);
+      setConversations(c);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load conversations.");
+      setError(err instanceof Error ? err.message : "Failed to load data.");
     }
-  }, [user.id]);
+  }, [userId]);
+
+  useEffect(() => { void refresh(); }, [refresh]);
+
+  const loadMessages = useCallback(async (convId: number) => {
+    if (!userId) return;
+    try {
+      setMessages(await listConversationMessages(userId, convId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load messages.");
+    }
+  }, [userId]);
 
   useEffect(() => {
-    void loadConversations();
-  }, [loadConversations]);
+    if (activeId) void loadMessages(activeId);
+    else setMessages([]);
+  }, [activeId, loadMessages]);
 
-  const loadMessages = useCallback(
-    async (conversationId: number) => {
-      if (!user.id) return;
-      try {
-        const data = await listConversationMessages(user.id, conversationId);
-        setMessages(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load messages.");
-      }
-    },
-    [user.id],
-  );
-
-  useEffect(() => {
-    if (activeConversationId) {
-      void loadMessages(activeConversationId);
-    } else {
-      setMessages([]);
-    }
-  }, [activeConversationId, loadMessages]);
-
-  async function handleNewConversation() {
-    if (!user.id) return;
+  async function handleNewChat(teacher: TeacherInfo) {
+    if (!userId) return;
     setError("");
     try {
-      const conv = await createConversation({ userId: user.id });
+      const conv = await createConversation({
+        studentId: userId,
+        teacherId: teacher.id,
+        title: `Chat with ${teacher.fullName}`,
+      });
       setConversations((prev) => [conv, ...prev]);
-      setActiveConversationId(conv.id);
-      setMessages([]);
+      setActiveId(conv.id);
+      setShowNewChat(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create conversation.");
     }
   }
 
-  async function handleDeleteConversation(id: number) {
-    if (!user.id) return;
+  async function handleDelete(id: number) {
+    if (!userId) return;
     try {
-      await deleteConversation(user.id, id);
+      await deleteConversation(userId, id);
       setConversations((prev) => prev.filter((c) => c.id !== id));
-      if (activeConversationId === id) {
-        setActiveConversationId(null);
-        setMessages([]);
-      }
+      if (activeId === id) { setActiveId(null); setMessages([]); }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete conversation.");
+      setError(err instanceof Error ? err.message : "Failed to delete.");
     }
   }
 
   async function onSend(e: React.FormEvent) {
     e.preventDefault();
-    if (!user.id || !activeConversationId) return;
-    const message = input.trim();
-    if (!message || loading) return;
-    setLoading(true);
+    if (!userId || !activeId) return;
+    const msg = input.trim();
+    if (!msg || sending) return;
+    setSending(true);
     setError("");
     try {
-      const result = await sendStudentChatMessage({
-        userId: user.id,
-        conversationId: activeConversationId,
-        message,
-      });
-      setMessages((prev) => [...prev, result.userMessage, result.assistantMessage]);
+      const sent = await sendChatMessage({ senderId: userId, conversationId: activeId, message: msg });
+      setMessages((prev) => [...prev, sent]);
       setInput("");
-      void loadConversations();
+      void refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send message.");
+      setError(err instanceof Error ? err.message : "Failed to send.");
     } finally {
-      setLoading(false);
+      setSending(false);
     }
   }
+
+  const activeConv = conversations.find((c) => c.id === activeId);
 
   return (
     <div style={{ display: "flex", gap: 16, height: "calc(100vh - 140px)", minHeight: 400 }}>
       {/* Sidebar */}
-      <div
-        style={{
-          width: 260,
-          minWidth: 260,
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-        }}
-      >
-        <button className="btn primary" onClick={handleNewConversation} style={{ width: "100%" }}>
+      <div style={{ width: 280, minWidth: 280, display: "flex", flexDirection: "column", gap: 8 }}>
+        <button className="btn primary" onClick={() => setShowNewChat(true)} style={{ width: "100%" }}>
           + New chat
         </button>
 
-        <div
-          style={{
-            flex: 1,
-            overflow: "auto",
-            border: "1px solid var(--border)",
-            borderRadius: 10,
-            padding: 8,
-          }}
-        >
+        <div style={{ flex: 1, overflow: "auto", border: "1px solid var(--border)", borderRadius: 10, padding: 8 }}>
           {conversations.length === 0 ? (
             <p className="muted" style={{ fontSize: 13, textAlign: "center", marginTop: 16 }}>
-              No conversations yet.
+              No conversations yet. Start one with a teacher.
             </p>
           ) : (
             conversations.map((conv) => (
               <div
                 key={conv.id}
+                onClick={() => { setActiveId(conv.id); setShowNewChat(false); }}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -153,30 +139,28 @@ export default function StudentChatPage() {
                   padding: "8px 10px",
                   borderRadius: 8,
                   cursor: "pointer",
-                  background: conv.id === activeConversationId ? "#e9f5ff" : "transparent",
+                  background: conv.id === activeId ? "#e9f5ff" : "transparent",
                   marginBottom: 4,
                 }}
-                onClick={() => setActiveConversationId(conv.id)}
               >
-                <span
-                  style={{
-                    flex: 1,
+                <div style={{ flex: 1, overflow: "hidden" }}>
+                  <div style={{
+                    fontSize: 14,
+                    fontWeight: conv.id === activeId ? 600 : 400,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
-                    fontSize: 14,
-                    fontWeight: conv.id === activeConversationId ? 600 : 400,
-                  }}
-                >
-                  {conv.title}
-                </span>
+                  }}>
+                    {conv.participantName || "Teacher"}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {conv.title}
+                  </div>
+                </div>
                 <button
                   className="btn"
                   style={{ padding: "2px 6px", fontSize: 12, minWidth: 0 }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void handleDeleteConversation(conv.id);
-                  }}
+                  onClick={(e) => { e.stopPropagation(); void handleDelete(conv.id); }}
                 >
                   ×
                 </button>
@@ -186,103 +170,89 @@ export default function StudentChatPage() {
         </div>
       </div>
 
-      {/* Main chat area */}
+      {/* Main area */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <h2 style={{ margin: "0 0 8px" }}>AI Assistant</h2>
+        {error && <p style={{ color: "#b42318", margin: "0 0 8px", fontSize: 13 }}>{error}</p>}
 
-        {error && (
-          <p className="muted" style={{ color: "#b42318", margin: "0 0 8px" }}>
-            {error}
-          </p>
-        )}
-
-        {!activeConversationId ? (
-          <div
-            className="card"
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "column",
-              gap: 12,
-            }}
-          >
-            <p className="muted" style={{ fontSize: 15 }}>
-              Select a conversation or start a new chat.
-            </p>
-            <button className="btn primary" onClick={handleNewConversation}>
-              + New chat
-            </button>
+        {showNewChat ? (
+          <div className="card" style={{ flex: 1, padding: 20 }}>
+            <h2 style={{ margin: "0 0 16px" }}>Start a conversation</h2>
+            <p className="muted" style={{ marginBottom: 16 }}>Select a teacher to chat with:</p>
+            {teachers.length === 0 ? (
+              <p className="muted">No teachers available yet.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {teachers.map((t) => (
+                  <button
+                    key={t.id}
+                    className="btn"
+                    onClick={() => void handleNewChat(t)}
+                    style={{ textAlign: "left", padding: "10px 14px" }}
+                  >
+                    <strong>{t.fullName}</strong>
+                    <span style={{ marginLeft: 8, color: "#888", fontSize: 13 }}>{t.email}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : !activeId ? (
+          <div className="card" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
+            <p className="muted" style={{ fontSize: 15 }}>Select a conversation or start a new chat.</p>
+            <button className="btn primary" onClick={() => setShowNewChat(true)}>+ New chat</button>
           </div>
         ) : (
           <>
-            {/* Messages */}
-            <div
-              className="card"
-              style={{
-                flex: 1,
-                overflow: "auto",
-                marginBottom: 12,
-                padding: 14,
-              }}
-            >
-              {messages.length === 0 ? (
-                <p className="muted">
-                  Start the conversation. Try: "What are my strongest skills?"
-                </p>
-              ) : (
-                messages.map((item) => (
-                  <div
-                    key={item.id}
-                    style={{
-                      marginBottom: 12,
-                      padding: 10,
-                      borderRadius: 10,
-                      background: item.role === "assistant" ? "#f7fafc" : "#e9f5ff",
-                      maxWidth: "85%",
-                      marginLeft: item.role === "user" ? "auto" : 0,
-                      marginRight: item.role === "assistant" ? "auto" : 0,
-                    }}
-                  >
-                    <strong style={{ textTransform: "capitalize", fontSize: 12, color: "#666" }}>
-                      {item.role === "user" ? "You" : "Assistant"}
-                    </strong>
-                    <div style={{ marginTop: 4, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
-                      {item.message}
-                    </div>
-                  </div>
-                ))
-              )}
-              <div ref={messagesEndRef} />
+            <div style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}>
+              <h2 style={{ margin: 0 }}>{activeConv?.participantName || "Chat"}</h2>
+              <span className="muted" style={{ fontSize: 13 }}>{activeConv?.title}</span>
             </div>
 
-            {/* Input */}
-            <form
-              onSubmit={onSend}
-              style={{ display: "flex", gap: 10, alignItems: "flex-end" }}
-            >
+            <div className="card" style={{ flex: 1, overflow: "auto", marginBottom: 12, padding: 14 }}>
+              {messages.length === 0 ? (
+                <p className="muted">No messages yet. Say hello!</p>
+              ) : (
+                messages.map((m) => {
+                  const isMe = m.senderId === userId;
+                  return (
+                    <div
+                      key={m.id}
+                      style={{
+                        marginBottom: 12,
+                        padding: 10,
+                        borderRadius: 10,
+                        background: isMe ? "#e9f5ff" : "#f7fafc",
+                        maxWidth: "85%",
+                        marginLeft: isMe ? "auto" : 0,
+                        marginRight: isMe ? 0 : "auto",
+                      }}
+                    >
+                      <strong style={{ fontSize: 12, color: "#666" }}>
+                        {isMe ? "You" : m.senderName || "Teacher"}
+                      </strong>
+                      <div style={{ marginTop: 4, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{m.message}</div>
+                      <div style={{ fontSize: 10, color: "#aaa", marginTop: 4 }}>
+                        {new Date(m.createdAt).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={endRef} />
+            </div>
+
+            <form onSubmit={onSend} style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
               <textarea
                 className="input"
                 rows={2}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    void onSend(e);
-                  }
-                }}
-                placeholder="Ask about your profile, skills, placements, CV..."
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void onSend(e); } }}
+                placeholder="Type a message..."
                 style={{ flex: 1, resize: "none" }}
               />
-              <button
-                className="btn primary"
-                type="submit"
-                disabled={loading || !input.trim()}
-                style={{ height: 52 }}
-              >
-                {loading ? "..." : "Send"}
+              <button className="btn primary" type="submit" disabled={sending || !input.trim()} style={{ height: 52 }}>
+                {sending ? "..." : "Send"}
               </button>
             </form>
           </>
