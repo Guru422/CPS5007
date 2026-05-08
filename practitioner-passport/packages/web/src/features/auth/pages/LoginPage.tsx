@@ -22,19 +22,25 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const onSubmit = async (e: React.FormEvent) => {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      await login({ email, password });
-      navigate("/redirect", { replace: true });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed.");
-    } finally {
-      setLoading(false);
+
+    if (!fullName.trim()) {
+      setErrorMessage("Please enter your name.");
+      return;
     }
-  };
+
+    setErrorMessage("");
+
+    login({
+      id: crypto.randomUUID(),
+      isAuthenticated: true,
+      role,
+      fullName
+    });
+
+    navigate("/redirect", { replace: true });
+  }
 
   return (
     <div className="page">
@@ -63,25 +69,50 @@ export default function LoginPage() {
           />
         </label>
 
-        <label className="label">
-          Password
-          <input
-            className="input"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
-          />
-        </label>
+          <label className="label">
+            Role
 
-        <button className="btn primary" type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
+            <select
+              className="input"
+              value={role}
+              onChange={(e) => setRole(e.target.value as Role)}
+            >
+              <option value="student">Student</option>
+              <option value="mentor">Mentor</option>
+              <option value="teacher">Academic</option>
+            </select>
+          </label>
 
-        <p className="muted" style={{ marginTop: 12 }}>
-          Need an account? <Link to="/signup">Create one</Link>
-        </p>
-      </form>
+          {errorMessage && (
+            <div
+              style={{
+                color: "#b42318",
+                fontSize: "14px"
+              }}
+            >
+              {errorMessage}
+            </div>
+          )}
+
+          <button className="btn primary" type="submit">
+            Continue
+          </button>
+        </form>
+
+        <div
+          style={{
+            marginTop: "18px",
+            textAlign: "center"
+          }}
+        >
+          <span className="muted">
+            Need an account?{" "}
+            <Link to="/signup">
+              Create one
+            </Link>
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

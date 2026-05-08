@@ -70,14 +70,60 @@ async function requestJson<T>(path: string, body: Record<string, unknown>): Prom
   return (await response.json()) as T;
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User>({
-    isAuthenticated: false,
-    role: "student",
-    fullName: "",
-    email: "",
-    studentId: "",
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+
+type ApiUser = {
+  id: string;
+  fullName: string;
+  email: string;
+  role: Role;
+  studentId: string;
+  isAuthenticated: true;
+};
+
+type ApiError = {
+  message?: string;
+  error?: string;
+};
+
+async function requestJson<T>(path: string, body: Record<string, unknown>): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
   });
+
+  if (!response.ok) {
+    let errorMessage = "Request failed.";
+    try {
+      const data = (await response.json()) as ApiError;
+      if (typeof data?.message === "string" && data.message.trim()) {
+        errorMessage = data.message;
+      } else if (typeof data?.error === "string" && data.error.trim()) {
+        errorMessage = data.error;
+      }
+    } catch {
+      // Ignore invalid error body and keep generic message.
+    }
+    throw new Error(errorMessage);
+  }
+
+  return (await response.json()) as T;
+}
+
+const defaultUser: User = {
+  id: undefined,
+  isAuthenticated: false,
+  role: "student",
+  fullName: "",
+  email: "",
+  studentId: ""
+};
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User>(defaultUser);
 
   const login: AuthContextValue["login"] = async ({ email, password }) => {
     const data = await requestJson<{ user: ApiUser }>("/bff/auth/login", { email, password });
@@ -136,16 +182,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const value = useMemo(() => ({ user, login, signup, logout }), [user]);
+  const value = useMemo(
+    () => ({
+      user,
+      login,
+      signup,
+      logout
+    }),
+    [user]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
+  const context = useContext(AuthContext);
+
+  if (!context) {
     throw new Error("useAuth must be used within AuthProvider");
   }
-  return ctx;
+
+  return context;
 }

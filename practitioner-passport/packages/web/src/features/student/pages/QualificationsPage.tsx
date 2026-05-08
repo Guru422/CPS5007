@@ -7,8 +7,6 @@ type Qualification = {
   title: string;
   organisation: string;
   year: string;
-  certificateName?: string;
-  certificateFile?: File | null;
 };
 
 export default function QualificationsPage() {
@@ -36,8 +34,8 @@ export default function QualificationsPage() {
   async function addQualification(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!title.trim() || !organisation.trim() || !year.trim()) {
-      alert("Please fill all required fields.");
+    if (!title || !organisation || !year) {
+      alert("Please fill all fields");
       return;
     }
 
@@ -76,7 +74,8 @@ export default function QualificationsPage() {
     <div>
       <h2>Qualifications</h2>
       <p className="muted">
-        Add your certificates and qualifications to support your development and placement readiness.
+        Add certificates and qualifications that support your professional
+        development.
       </p>
       {error && (
         <p className="muted" style={{ color: "#b42318" }}>
@@ -115,69 +114,42 @@ export default function QualificationsPage() {
           />
         </label>
 
-        <label className="label">
-          Upload Certificate
-          <input
-            id="certificate-upload"
-            className="input"
-            type="file"
-            accept=".pdf,.png,.jpg,.jpeg"
-            onChange={(e) => setCertificateFile(e.target.files?.[0] ?? null)}
-          />
-        </label>
-
         <button className="btn primary" type="submit">
           Add Qualification
         </button>
       </form>
 
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>Saved Qualifications</h3>
+      {qualifications.length > 0 && (
+        <div className="card">
+          <h3>Saved Qualifications</h3>
 
-        {qualifications.length === 0 ? (
-          <p className="muted">No qualifications added yet.</p>
-        ) : (
-          <div style={{ display: "grid", gap: "14px" }}>
-            {qualifications.map((q) => (
-              <div
-                key={q.id}
-                style={{
-                  border: "1px solid var(--border)",
-                  borderRadius: "10px",
-                  padding: "14px",
-                  background: "#fff"
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: "16px",
-                    alignItems: "flex-start"
-                  }}
-                >
-                  <div>
-                    <h4 style={{ margin: "0 0 6px" }}>{q.title}</h4>
-                    <div className="muted">
-                      {q.organisation} • {q.year}
-                    </div>
-
-                    {q.certificateName && (
-                      <div className="muted" style={{ marginTop: "6px" }}>
-                        Certificate: {q.certificateName}
-                      </div>
-                    )}
-                  </div>
-
-                  <button className="btn" type="button" onClick={() => removeQualification(q.id)}>
-                    Remove
-                  </button>
+          {qualifications.map((q) => (
+            <div
+              key={q.id}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "10px 0",
+                borderBottom: "1px solid var(--border)",
+              }}
+            >
+              <div>
+                <strong>{q.title}</strong>
+                <div className="muted">
+                  {q.organisation} • {q.year}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+
+              <button
+                className="btn"
+                onClick={() => removeQualification(q.id)}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

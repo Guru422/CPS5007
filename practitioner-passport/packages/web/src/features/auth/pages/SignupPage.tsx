@@ -7,7 +7,7 @@ export default function SignupPage() {
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [studentId, setStudentId] = useState("");
   const [role, setRole] = useState<Role>("student");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -106,30 +106,34 @@ export default function SignupPage() {
           />
         </label>
 
-        {role === "student" && (
-          <label className="label">
-            Student ID
-            <input
-              className="input"
-              value={studentId}
-              onChange={(e) => setStudentId(e.target.value)}
-              placeholder="Enter your student ID"
-            />
-          </label>
-        )}
+          {role === "student" && (
+            <label className="label">
+              Student ID
+              <input
+                className="input"
+                value={studentId}
+                onChange={(e) => setStudentId(e.target.value)}
+                placeholder="Enter your student ID"
+              />
+            </label>
+          )}
 
-        {errorMessage && (
-          <p style={{ color: "#b42318", marginTop: 0 }}>{errorMessage}</p>
-        )}
+          {errorMessage && (
+            <div style={{ color: "#b42318", fontSize: "14px" }}>
+              {errorMessage}
+            </div>
+          )}
 
         <button className="btn primary" type="submit" disabled={sending}>
           {sending ? "Sending link..." : "Create account"}
         </button>
 
-        <p className="muted" style={{ marginTop: 12 }}>
-          Already have an account? <Link to="/login">Back to login</Link>
-        </p>
-      </form>
+        <div style={{ marginTop: "18px", textAlign: "center" }}>
+          <span className="muted">
+            Already have an account? <Link to="/login">Back to login</Link>
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

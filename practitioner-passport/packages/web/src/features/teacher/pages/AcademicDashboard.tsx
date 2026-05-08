@@ -1,25 +1,25 @@
 import { Link } from "react-router-dom";
 
 const summaryCards = [
-  { label: "Assigned Students", value: 12, link: "/mentor/progress" },
-  { label: "Qualifications Reviewed", value: 28, link: "/mentor/qualifications" },
-  { label: "Placement Cases", value: 9, link: "/mentor/placements" },
-  { label: "Students Needing Support", value: 3, link: "/mentor/progress" }
+  { label: "Placement Requests", value: 6, link: "/teacher/placement-requests" },
+  { label: "Pending Reviews", value: 4, link: "/teacher/placement-requests" },
+  { label: "Student Messages", value: 11, link: "/teacher/chat" },
+  { label: "Reports Generated", value: 8, link: "/teacher/reports" }
 ];
 
-const recentUpdates = [
-  "Joe Doe added a new AWS qualification",
-  "Amira Khan submitted a placement update",
-  "Sam Lewis needs support with development logs",
-  "Placement progress report updated"
+const recentItems = [
+  "Joe Doe submitted a placement request",
+  "Amira Khan sent a message about her certificate",
+  "Sam Lewis requires placement review",
+  "Progress report generated for Data Analyst pathway"
 ];
 
-export default function MentorDashboard() {
+export default function AcademicDashboard() {
   return (
     <div>
-      <h2>Mentor Dashboard</h2>
+      <h2>Academic Dashboard</h2>
       <p className="muted">
-        Monitor student progress, qualifications, development activity, and placement readiness.
+        Review placement requests, communicate with students, and monitor academic progress.
       </p>
 
       <div
@@ -52,10 +52,10 @@ export default function MentorDashboard() {
         }}
       >
         <div className="card">
-          <h3 style={{ marginTop: 0 }}>Recent Student Updates</h3>
+          <h3 style={{ marginTop: 0 }}>Recent Academic Activity</h3>
 
           <div style={{ display: "grid", gap: "12px" }}>
-            {recentUpdates.map((item) => (
+            {recentItems.map((item) => (
               <div
                 key={item}
                 style={{
@@ -72,16 +72,25 @@ export default function MentorDashboard() {
         </div>
 
         <div className="card">
-          <h3 style={{ marginTop: 0 }}>Mentor Focus</h3>
+          <h3 style={{ marginTop: 0 }}>Academic Actions</h3>
 
           <p className="muted">
-            Prioritise students who have low competency activity, missing qualifications,
-            or pending placement progress.
+            Review placement submissions, respond to student messages, and view reports.
           </p>
 
-          <Link className="btn primary" to="/mentor/progress">
-            View Student Progress
-          </Link>
+          <div style={{ display: "grid", gap: "10px" }}>
+            <Link className="btn primary" to="/teacher/placement-requests">
+              Review Placements
+            </Link>
+
+            <Link className="btn" to="/teacher/chat">
+              Open Chat
+            </Link>
+
+            <Link className="btn" to="/teacher/reports">
+              View Reports
+            </Link>
+          </div>
         </div>
       </div>
     </div>

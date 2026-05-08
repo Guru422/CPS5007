@@ -16,15 +16,17 @@ import DevelopmentLogPage from "../features/student/pages/DevelopmentLogPage";
 import PlacementsPage from "../features/student/pages/PlacementsPage";
 import AiCvGeneratorPage from "../features/student/pages/AiCvGeneratorPage";
 import StudentChatPage from "../features/student/pages/StudentChatPage";
+import ProgressPage from "../features/student/pages/ProgressPage";
+import AnalyticsPage from "../features/student/pages/AnalyticsPage";
 
 import MentorDashboard from "../features/mentor/pages/MentorDashboard";
 import StudentProgressPage from "../features/mentor/pages/StudentProgressPage";
 import MentorQualificationsPage from "../features/mentor/pages/MentorQualificationsPage";
 import MentorPlacementProgressPage from "../features/mentor/pages/MentorPlacementProgressPage";
 
-import TeacherDashboard from "../features/teacher/pages/TeacherDashboard";
+import TeacherDashboard from "../features/teacher/pages/AcademicDashboard";
 import PlacementRequestsPage from "../features/teacher/pages/PlacementRequestsPage";
-import TeacherChatPage from "../features/teacher/pages/TeacherChatPage";
+import TeacherChatPage from "../features/teacher/pages/AcademicChatPage";
 import ReportsPage from "../features/teacher/pages/ReportsPage";
 
 
@@ -103,6 +105,23 @@ export default function AppRoutes() {
         />
 
         <Route
+          path="student/progress"
+          element={
+            <RequireRole role="student">
+              <ProgressPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="student/analytics"
+          element={
+            <RequireRole role="student">
+              <AnalyticsPage />
+            </RequireRole>
+          }
+        />
+
+        <Route
           path="mentor/dashboard"
           element={
             <RequireRole role="mentor">
@@ -118,6 +137,7 @@ export default function AppRoutes() {
             </RequireRole>
           }
         />
+        
         <Route
           path="mentor/qualifications"
           element={

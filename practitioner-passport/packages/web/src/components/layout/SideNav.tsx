@@ -10,6 +10,8 @@ function getLinks(role: Role): NavItem[] {
   if (role === "student") {
     return [
       { to: "/student/dashboard", label: "Dashboard" },
+      { to: "/student/progress", label: "Progress" },
+      { to: "/student/analytics", label: "Analytics" },
       { to: "/student/competencies", label: "Competencies" },
       { to: "/student/qualifications", label: "Qualifications" },
       { to: "/student/development", label: "Development Log" },
