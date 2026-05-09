@@ -1,110 +1,96 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Role, useAuth } from "../../../app/providers/AuthProvider";
 
 export default function SignupPage() {
   const { signup } = useAuth();
+  const navigate = useNavigate();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [studentId, setStudentId] = useState("");
   const [role, setRole] = useState<Role>("student");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
-  const [sending, setSending] = useState(false);
-  const [emailSentMessage, setEmailSentMessage] = useState("");
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const onSubmit = async (e: React.FormEvent) => {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
-    setEmailSentMessage("");
-    setPreviewUrl(null);
-    const passwordPolicy = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
-    if (!passwordPolicy.test(password)) {
-      setError("Password must be at least 8 characters and include uppercase, number and special character.");
+
+    if (!fullName.trim() || !email.trim()) {
+      setErrorMessage("Please enter your name and email.");
       return;
     }
-    if (password !== confirmPassword) {
-      setError("Password and confirm password must match.");
+
+    if (role === "student" && !studentId.trim()) {
+      setErrorMessage("Please enter your student ID.");
       return;
     }
-    setSending(true);
-    try {
-      const result = await signup({ role, fullName, email, studentId, password, confirmPassword });
-      setEmailSentMessage(result.message);
-      setPreviewUrl(typeof result.previewUrl === "string" ? result.previewUrl : null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send verification email.");
-    } finally {
-      setSending(false);
-    }
-  };
+
+    setErrorMessage("");
+
+    signup({
+      id: crypto.randomUUID(),
+      isAuthenticated: true,
+      role,
+      fullName: fullName.trim(),
+      email: email.trim(),
+      studentId: role === "student" ? studentId.trim() : ""
+    });
+
+    navigate("/redirect", { replace: true });
+  }
 
   return (
-    <div className="page">
-      <h1>Sign Up</h1>
-      <p className="muted">Create a mock Practitioner Passport account.</p>
-      {error && (
-        <p className="muted" style={{ marginTop: 8, color: "#b42318" }}>
-          {error}
-        </p>
-      )}
-      {emailSentMessage && (
-        <p className="muted" style={{ marginTop: 8 }}>
-          {emailSentMessage}
-        </p>
-      )}
-      {previewUrl && (
-        <p className="muted" style={{ marginTop: 8 }}>
-          Development preview: <a href={previewUrl}>open magic link</a>
-        </p>
-      )}
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "grid",
+        placeItems: "center",
+        padding: "24px",
+        background: "#f5f7fb"
+      }}
+    >
+      <div className="card" style={{ width: "100%", maxWidth: "460px", padding: "32px" }}>
+        <div style={{ marginBottom: "24px", textAlign: "center" }}>
+          <h1 style={{ marginBottom: "8px" }}>Create Account</h1>
+          <p className="muted" style={{ margin: 0 }}>
+            Join Practitioner Passport.
+          </p>
+        </div>
 
-      <form onSubmit={handleSubmit} className="card">
-        <label className="label">
-          Full Name
-          <input
-            className="input"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="Enter your full name"
-          />
-        </label>
+        <form onSubmit={handleSubmit} style={{ display: "grid", gap: "18px" }}>
+          <label className="label">
+            Full Name
+            <input
+              className="input"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Enter your full name"
+            />
+          </label>
 
-        <label className="label">
-          Email
-          <input
-            className="input"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
-          />
-        </label>
+          <label className="label">
+            Email
+            <input
+              className="input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+            />
+          </label>
 
-        <label className="label">
-          Password
-          <input
-            className="input"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 8 chars, uppercase, number, special"
-          />
-        </label>
-
-        <label className="label">
-          Confirm password
-          <input
-            className="input"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Re-enter your password"
-          />
-        </label>
+          <label className="label">
+            Role
+            <select
+              className="input"
+              value={role}
+              onChange={(e) => setRole(e.target.value as Role)}
+            >
+              <option value="student">Student</option>
+              <option value="mentor">Mentor</option>
+              <option value="teacher">Academic</option>
+            </select>
+          </label>
 
           {role === "student" && (
             <label className="label">
@@ -124,9 +110,10 @@ export default function SignupPage() {
             </div>
           )}
 
-        <button className="btn primary" type="submit" disabled={sending}>
-          {sending ? "Sending link..." : "Create account"}
-        </button>
+          <button className="btn primary" type="submit">
+            Create Account
+          </button>
+        </form>
 
         <div style={{ marginTop: "18px", textAlign: "center" }}>
           <span className="muted">

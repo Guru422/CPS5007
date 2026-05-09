@@ -1,26 +1,14 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../../../app/providers/AuthProvider";
-
-interface LoginLocationState {
-  signupSuccess?: boolean;
-  email?: string;
-  fullName?: string;
-}
+import { Link, useNavigate } from "react-router-dom";
+import { Role, useAuth } from "../../../app/providers/AuthProvider";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const state = (location.state as LoginLocationState | null) ?? null;
-  const query = new URLSearchParams(location.search);
-  const verifiedFromLink = query.get("verified") === "1";
-  const verifiedEmail = query.get("email") ?? "";
 
-  const [email, setEmail] = useState(state?.email ?? verifiedEmail);
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [role, setRole] = useState<Role>("student");
+  const [errorMessage, setErrorMessage] = useState("");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,42 +24,44 @@ export default function LoginPage() {
       id: crypto.randomUUID(),
       isAuthenticated: true,
       role,
-      fullName
+      fullName: fullName.trim()
     });
 
     navigate("/redirect", { replace: true });
   }
 
   return (
-    <div className="page">
-      <h1>Login</h1>
-      <p className="muted">Mock login for Practitioner Passport development.</p>
-      {(state?.signupSuccess || verifiedFromLink) && (
-        <p className="muted" style={{ marginTop: 8 }}>
-          Account verified successfully. Please log in to continue.
-        </p>
-      )}
-      {error && (
-        <p className="muted" style={{ marginTop: 8, color: "#b42318" }}>
-          {error}
-        </p>
-      )}
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "grid",
+        placeItems: "center",
+        padding: "24px",
+        background: "#f5f7fb"
+      }}
+    >
+      <div className="card" style={{ width: "100%", maxWidth: "420px", padding: "32px" }}>
+        <div style={{ marginBottom: "24px", textAlign: "center" }}>
+          <h1 style={{ marginBottom: "8px" }}>Practitioner Passport</h1>
+          <p className="muted" style={{ margin: 0 }}>
+            Professional development and placement tracking platform.
+          </p>
+        </div>
 
-      <form onSubmit={onSubmit} className="card">
-        <label className="label">
-          Email
-          <input
-            className="input"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
-          />
-        </label>
+        <form onSubmit={handleSubmit} style={{ display: "grid", gap: "18px" }}>
+          <label className="label">
+            Full Name
+            <input
+              className="input"
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Enter your name"
+            />
+          </label>
 
           <label className="label">
             Role
-
             <select
               className="input"
               value={role}
@@ -84,12 +74,7 @@ export default function LoginPage() {
           </label>
 
           {errorMessage && (
-            <div
-              style={{
-                color: "#b42318",
-                fontSize: "14px"
-              }}
-            >
+            <div style={{ color: "#b42318", fontSize: "14px" }}>
               {errorMessage}
             </div>
           )}
@@ -99,17 +84,9 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div
-          style={{
-            marginTop: "18px",
-            textAlign: "center"
-          }}
-        >
+        <div style={{ marginTop: "18px", textAlign: "center" }}>
           <span className="muted">
-            Need an account?{" "}
-            <Link to="/signup">
-              Create one
-            </Link>
+            Need an account? <Link to="/signup">Create one</Link>
           </span>
         </div>
       </div>
