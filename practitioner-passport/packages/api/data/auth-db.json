@@ -1,0 +1,74 @@
+{
+  "users": [
+    {
+      "id": "6bb83198-5e6b-487a-b35c-c5170d3253ad",
+      "fullName": "E2E User",
+      "email": "e2e.1773664779@example.com",
+      "role": "student",
+      "studentId": "S12345",
+      "verifiedAt": "2026-03-16T12:39:42.419Z",
+      "createdAt": "2026-03-16T12:39:42.419Z"
+    },
+    {
+      "id": "f5ce5227-b4f8-4316-8f4b-a27b0e20bc37",
+      "fullName": "E2E User",
+      "email": "e2e.1773665237@example.com",
+      "role": "student",
+      "studentId": "S12345",
+      "verifiedAt": "2026-03-16T12:47:21.550Z",
+      "createdAt": "2026-03-16T12:47:21.550Z"
+    }
+  ],
+  "pendingSignups": [
+    {
+      "token": "5c7d48727f93ed52895be4adaf9007887d127aeb5c185620a191ef45febb0909",
+      "fullName": "S M Yasir",
+      "email": "2512519@live.stmarys.ac.uk",
+      "role": "student",
+      "studentId": "2512519",
+      "webBaseUrl": "http://localhost:5173",
+      "createdAt": "2026-03-16T12:49:42.030Z",
+      "expiresAt": "2026-03-17T12:49:42.030Z"
+    },
+    {
+      "token": "3c21906876191c05596e3c7deb5d1abf956b35d011495ff79b569dbe34c26f67",
+      "fullName": "Sam",
+      "email": "u1904082@student.cuet.ac.bd",
+      "role": "student",
+      "studentId": "101",
+      "webBaseUrl": "http://localhost:5173",
+      "createdAt": "2026-03-17T18:52:02.509Z",
+      "expiresAt": "2026-03-18T18:52:02.509Z"
+    },
+    {
+      "token": "93979ab45024a5a09b5da177fff72b748fb59a36fe66a9c794a448fe2a4ec827",
+      "fullName": "SMTP Check",
+      "email": "smtp-check@example.com",
+      "role": "student",
+      "studentId": "S1",
+      "webBaseUrl": "http://localhost:5173",
+      "createdAt": "2026-03-17T18:53:00.696Z",
+      "expiresAt": "2026-03-18T18:53:00.696Z"
+    },
+    {
+      "token": "d085842d5cd5325ef90a55aade4542e18dacc773d2cbedfaf3e173eda38b2d11",
+      "fullName": "SMTP Check 2",
+      "email": "smtp-check-2@example.com",
+      "role": "student",
+      "studentId": "S2",
+      "webBaseUrl": "http://localhost:5173",
+      "createdAt": "2026-03-17T18:53:23.221Z",
+      "expiresAt": "2026-03-18T18:53:23.221Z"
+    },
+    {
+      "token": "c7bf7dd7f966d2ccaacf97a7ee4896cb20c9b91bd08c2da3bc609c41aeaac893",
+      "fullName": "Mail Verify",
+      "email": "aksaminyeasir+ppverify@gmail.com",
+      "role": "student",
+      "studentId": "S3",
+      "webBaseUrl": "http://localhost:5173",
+      "createdAt": "2026-03-17T18:59:02.079Z",
+      "expiresAt": "2026-03-18T18:59:02.079Z"
+    }
+  ]
+}

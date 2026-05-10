@@ -48,6 +48,8 @@ export type DevelopmentRecord = {
   id: number;
   userId: string;
   skill: string;
+  /** Matches API `student_development_logs.category` (default Technical). */
+  category?: string;
   description: string;
   date: string;
 };
